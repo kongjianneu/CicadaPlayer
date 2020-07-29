@@ -68,7 +68,7 @@ public:
     virtual void setDiscard(bool discard)
     {
         mbDiscard = discard;
-    };
+    }
 
     virtual bool getDiscard()
     {
@@ -170,7 +170,12 @@ public:
 
     virtual void setDiscard(bool discard)
     {
+        mbDiscard = discard;
+    }
 
+    virtual bool getDiscard()
+    {
+        return mbDiscard;
     }
 
     AFFrameInfo &getInfo();
@@ -179,7 +184,7 @@ public:
 
 protected:
     AFFrameInfo mInfo{};
-
+    bool mbDiscard{false};
 };
 
 

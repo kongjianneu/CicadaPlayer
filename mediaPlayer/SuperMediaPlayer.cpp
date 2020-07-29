@@ -3012,6 +3012,7 @@ namespace Cicada {
     {
         if (mAudioRender == nullptr) {
             mAudioRender = AudioRenderFactory::create();
+            mAudioRender->setRenderingCb(mAudioRenderingCb, mFrameCbUserData);
         }
 
         assert(mAudioRender);
@@ -3319,6 +3320,10 @@ namespace Cicada {
         }
 
         mSecretPlayBack = false;
+        mAudioRenderingCb = nullptr;
+        mAudioRenderingCbUserData = nullptr;
+        mFrameCb = nullptr;
+        mFrameCbUserData = nullptr;
     }
 
     int SuperMediaPlayer::GetCurrentStreamIndex(StreamType type)
@@ -4238,6 +4243,13 @@ namespace Cicada {
         mFrameCb = cb;
         mFrameCbUserData = userData;
     }
+
+    void SuperMediaPlayer::SetAudioRenderingCallBack(onRenderFrame cb, void *userData)
+    {
+        mAudioRenderingCb = cb;
+        mAudioRenderingCbUserData = userData;
+    }
+
     int SuperMediaPlayer::invokeComponent(std::string content)
     {
         return mDcaManager.invoke(content);
