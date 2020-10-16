@@ -14,8 +14,10 @@
 #include <string>
 extern "C" {
 //#include <libavutil/rational.h>
+    #include "libavcodec/avcodec.h"
 };
 #include <utils/CicadaType.h>
+
 
 struct AVRational;
 
@@ -200,6 +202,9 @@ public:
     }
 
     void dump();
+
+    virtual void setCodecContext(AVCodecContext *context) = 0;
+    virtual AVCodecContext *getCodecContext() = 0;
 
 protected:
     AFFrameInfo mInfo{};

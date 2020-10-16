@@ -8,9 +8,21 @@
 #include <base/media/AVAFPacket.h>
 #include <render/video/vsync/VSyncFactory.h>
 #include <utils/frame_work_log.h>
+#include <d3d9.h>
+#include <dxva2api.h>
 #ifdef __APPLE__
 #include <base/media/PBAFFrame.h>
 #endif
+
+typedef struct DXVA2DevicePriv {
+    HMODULE d3dlib;
+    HMODULE dxva2lib;
+
+    HANDLE device_handle;
+
+    IDirect3D9 *d3d9;
+    IDirect3DDevice9 *d3d9device;
+} DXVA2DevicePriv;
 
 static int SDLCALL SdlWindowSizeEventWatch(void *userdata, SDL_Event *event);
 
@@ -220,21 +232,48 @@ int SdlAFVideoRender::onVSyncInner(int64_t tick)
     SDL_Rect dstRect = getDestRet();
     {
         std::unique_lock<std::mutex> lock(mRenderMutex);
-        uint8_t **data = frame->getData();
-        int *lineSize = frame->getLineSize();
 
-        if (mVideoRender != nullptr && mVideoTexture != nullptr) {
-            SDL_UpdateYUVTexture(mVideoTexture, &srcRect, data[0], lineSize[0], data[1], lineSize[1], data[2], lineSize[2]);
-            SDL_RenderClear(mVideoRender);
-            SDL_RenderCopyEx(mVideoRender, //SDL_Renderer*          renderer,
-                             mVideoTexture,//SDL_Texture*           texture,
-                             &srcRect,     //const SDL_Rect*        srcrect,
-                             &dstRect,     //const SDL_Rect*        dstrect,
-                             angle,        //const double           angle,
-                             nullptr,      //const SDL_Point*       center,
-                             flip          //const SDL_RendererFlip flip
-            );
-            SDL_RenderPresent(mVideoRender);
+        if (frame->getInfo().video.format == 901) {
+            AVCodecContext *codecContext = frame->getCodecContext();
+            AVHWDeviceContext *device_ctx = (AVHWDeviceContext *) codecContext->hw_device_ctx->data;
+            DXVA2DevicePriv *priv = (DXVA2DevicePriv *) device_ctx->user_opaque;
+            IDirect3DDevice9 *d3d9device = priv->d3d9device;
+
+            RECT rcSrc, rcDest;
+            rcSrc.left = srcRect.x;
+            rcSrc.top = srcRect.y;
+            rcSrc.right = srcRect.x + srcRect.w;
+            rcSrc.bottom = srcRect.y + srcRect.h;
+            rcDest.left = dstRect.x;
+            rcDest.top = dstRect.y;
+            rcDest.right = dstRect.x + dstRect.w;
+            rcDest.bottom = dstRect.y + dstRect.h;
+            uint8_t **data = frame->getData();
+            IDirect3DSurface9 *surface = (IDirect3DSurface9 *) data[3];
+            IDirect3DSurface9 *back = NULL;
+            d3d9device->BeginScene();
+            d3d9device->GetBackBuffer(0, 0, D3DBACKBUFFER_TYPE_MONO, &back);
+            d3d9device->StretchRect(surface, nullptr, back, nullptr, D3DTEXF_LINEAR);
+            d3d9device->EndScene();
+            d3d9device->Present(nullptr, &rcDest, (HWND)mCurrentView, NULL);
+            back->Release();
+        } else {
+            uint8_t **data = frame->getData();
+            int *lineSize = frame->getLineSize();
+
+            if (mVideoRender != nullptr && mVideoTexture != nullptr) {
+                SDL_UpdateYUVTexture(mVideoTexture, &srcRect, data[0], lineSize[0], data[1], lineSize[1], data[2], lineSize[2]);
+                SDL_RenderClear(mVideoRender);
+                SDL_RenderCopyEx(mVideoRender, //SDL_Renderer*          renderer,
+                                 mVideoTexture,//SDL_Texture*           texture,
+                                 &srcRect,     //const SDL_Rect*        srcrect,
+                                 &dstRect,     //const SDL_Rect*        dstrect,
+                                 angle,        //const double           angle,
+                                 nullptr,      //const SDL_Point*       center,
+                                 flip          //const SDL_RendererFlip flip
+                );
+                SDL_RenderPresent(mVideoRender);
+            }
         }
     }
     {

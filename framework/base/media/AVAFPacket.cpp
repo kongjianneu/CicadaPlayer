@@ -213,3 +213,13 @@ AVAFFrame::operator PBAFFrame *()
     return nullptr;
 }
 #endif
+
+void AVAFFrame::setCodecContext(AVCodecContext *context)
+{
+    mCodecContext = context;
+}
+
+AVCodecContext *AVAFFrame::getCodecContext()
+{
+    return mCodecContext;
+}

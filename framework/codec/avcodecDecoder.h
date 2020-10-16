@@ -24,6 +24,8 @@ namespace Cicada{
             AVCodec *codec;
             AVFrame *avFrame;
             video_info vInfo;
+            AVBufferRef *hw_device_ctx = nullptr;
+            AVPixelFormat hw_pix_fmt = AV_PIX_FMT_NONE;
 //            struct SwsContext *img_convert_ctx;
 //            int swscale_panding;
 //            AVFrame *tmp_picture;

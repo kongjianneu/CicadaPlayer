@@ -95,10 +95,14 @@ public:
 
     void updateInfo();
 
+    void setCodecContext(AVCodecContext *context);
+    AVCodecContext *getCodecContext();
+
 
 private:
     AVFrame *mAvFrame;
     FrameType mType = FrameTypeUnknown;
+    AVCodecContext *mCodecContext = nullptr;
 
     void copyInfo();
 };
